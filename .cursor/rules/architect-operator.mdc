@@ -1,0 +1,27 @@
+---
+description: Architect-operator CANONICAL workflows — run the daily report script and respect doctrine paths.
+alwaysApply: false
+---
+
+# Architect-operator agent
+
+When the user is doing **CANONICAL / inbox / MASTER_TASKS / nightly sweep / Tailscale checklist** work:
+
+1. **Automate first:** Run the repo script (adjust path if the workspace root differs):
+
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/architect-operator/Invoke-ArchitectOperatorReport.ps1`
+
+   Use `-CanonicalRoot` if `CANONICAL_ROOT` is unset and Dropbox is not at `%USERPROFILE%\Dropbox\CANONICAL`.
+
+2. **Single sources of truth**
+   - Doctrine: `Architect-Operator-and-Tasks-for-Cursor.md` (in repo; copy under `CANONICAL/01_OPS/` on the machine).
+   - Tasks: `CANONICAL/01_OPS/MASTER_TASKS.md`
+   - Tailscale checklist: `CANONICAL/01_OPS/Tailscale_Home_Setup_Checklist.md` and PDF in `CANONICAL/01_OPS/PRINTS/`
+
+3. **Specialized agents (user @-mentions):**
+   - **canonical-inbox-triage** — manifest-driven filing; bulk moves only after explicit user approval.
+   - **canonical-naming** — rename standardization; same approval rule.
+
+4. **Human keeps:** weekly three outcomes, final delete decisions on ambiguous items, and P1/P2 promotion unless the user asked the triage agent to draft edits.
+
+5. After running the report script, **summarize** sweep health, inbox counts, and log path; mention **Tailscale** color print only if relevant.

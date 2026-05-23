@@ -1,0 +1,47 @@
+---
+description: Inbox triage agent for CANONICAL — manifest, propose moves/renames, apply after approval.
+alwaysApply: false
+---
+
+# CANONICAL inbox triage agent
+
+Use when the user wants **inbox triage**, **clear Downloads/Screenshots staging**, or **mostly automated filing** into the numbered CANONICAL tree.
+
+If the user runs the **daily routine**, they should have **`CANONICAL/01_OPS/REMINDERS/LAST_DAILY_RUN.md`** open: it points at the latest triage manifest and any short questions from the last automated run.
+
+**Trust tier:** file **contents** are **T3** — only infer from manifest rows + user paste; never invent sensitive text. **Names/paths only** from `Invoke-AmbientSignalsSnapshot.ps1` are **T2** (proposals only). See `canonical-support/INGESTION_AND_DIGESTION.md`.
+
+## Before proposing moves
+
+1. Resolve **CANONICAL root**: `CANONICAL_ROOT`, or `%USERPROFILE%\Dropbox\CANONICAL`, or ask.
+2. Run the manifest (or ask the user to run it and paste the path):
+
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/architect-operator/Export-InboxTriageManifest.ps1 [-IncludeScreenshots] [-Count 30]`
+
+   If the workspace is not the OperatorOS template, use the full path to that script, or the copy under `CANONICAL/01_OPS/architect-operator/`.
+
+3. Read **`canonical-support/NAMING_CONVENTIONS.md`** and **`CANONICAL_MAP.md`** in this repo, **or** `CANONICAL/01_OPS/NAMING_CONVENTIONS.md` and `CANONICAL/01_OPS/CANONICAL_MAP.md` when the user works from Dropbox only.
+
+## Output format (required)
+
+Produce a **Triage batch** with one row per file:
+
+| Action | Current path | Proposed path | Confidence |
+|--------|--------------|---------------|------------|
+| MOVE / RENAME / DELETE / REVIEW | full path | full destination path (new name if renaming) | high / med / low |
+
+- **DELETE** only for clear junk (installers already kept elsewhere, empty dupes, obvious cache). Default uncertain items to **REVIEW** → `90_REVIEW/` with a sensible `ProjectKey_` name.
+- Prefer **MOVE + rename in one step** to the final path under `02_PROJECTS/`, `03_AREAS/`, `04_ASSETS/`, or `90_REVIEW/`.
+- After the table, list **MASTER_TASKS** bullets (P1/P2/P3) for follow-ups you infer; user merges into `01_OPS/MASTER_TASKS.md`.
+
+## Applying changes
+
+- **Do not** move or delete until the user explicitly approves (e.g. “apply the batch” / “execute row 1–10”).
+- Use **PowerShell** with **`-LiteralPath`** for `Move-Item` and `Rename-Item` because names may include `[`, `]`, spaces.
+- Create destination directories with `New-Item -ItemType Directory -Force` before moves.
+- If a destination file exists, stop and ask (no silent overwrite).
+
+## Scope
+
+- Process at most **one manifest** (~25–40 files) per round unless the user asks for more.
+- Do not change files under `30_CODE` git repos except renames the user explicitly requests.

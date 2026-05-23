@@ -1,0 +1,22 @@
+{
+  "_readme": "Copy to aya-policy.json and tune for your AYA (age-/program-appropriate) rules.",
+  "ayaStatement": "Content must be appropriate for your students and comply with your institution's policies. This file encodes automated checks only; you remain responsible for what you post.",
+  "blockOnFailure": true,
+  "maxCharacters": 30000,
+  "maxBytes": 120000,
+  "requiredPhrases": [],
+  "blockedPhrases": [],
+  "blockedRegex": [
+    "\\b(?:password|ssn|social\\s*security)\\s*[:=]",
+    "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+  ],
+  "blockedUrlHosts": [
+    "discord.gg",
+    "discord.com/channels",
+    "t.me/"
+  ],
+  "allowedUrlHosts": [],
+  "allowOnlyHttpsLinks": true,
+  "stripAngleBracketEmails": false,
+  "notes": "If allowedUrlHosts is non-empty, any http(s) URL host must appear in that list (strict allowlist)."
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "operatoros-tracker",
+    "title": "OperatorOS Tracker",
+    "blurb": "Daily check-ins, weekly ops review, and kaizen logging — desktop and PWA.",
+    "href": "/tools",
+    "kind": "tool"
+  },
+  {
+    "id": "doctrine",
+    "title": "Doctrine map",
+    "blurb": "How Projects, Areas, Assets, and Inbox map to a single filesystem spine.",
+    "href": "/doctrine",
+    "kind": "doc"
+  },
+  {
+    "id": "network",
+    "title": "Network",
+    "blurb": "People and collaborators with a line and a link — not a file dump.",
+    "href": "/people",
+    "kind": "people"
+  }
+]

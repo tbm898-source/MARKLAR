@@ -1,0 +1,14 @@
+---
+description: Multi-agent AI Council — intake packet, roles, Verifier adversarial pass, council brief, human tie-break. Use when the user runs a council, round-robin specialists, or asks for deliberation / consensus across agents.
+alwaysApply: false
+---
+
+# AI Council
+
+1. **Read doctrine:** `canonical-support/AI_COUNCIL_DOCTRINE.md` before structuring a multi-agent run.
+2. **Intake packet first:** goal, constraints, paths, commands + errors verbatim, “do not touch” list. If missing, stop and ask only for gaps.
+3. **Roles:** Architect / Implementer / Verifier / Operator / Scribe / **Sentinel** (drift: declared vs observed via git + CANONICAL + scripts) — non-overlapping; Verifier must assume the proposal is wrong until falsified. Run **Sentinel** at the start of a heavy session or when “something moved” — see doctrine § Sentinel tier.
+4. **Output:** one **Council brief** per cycle (facts, disagreements, decision, dissent, verification, owner). No silent bulk deletes or pushes unless the human explicitly authorized that class of action this session.
+5. **Repo agents:** delegate to **architect-operator** and **operator** when CANONICAL or host/network context is in scope; merge their outputs into the brief instead of duplicating work.
+
+6. **Automation nudge:** the user’s morning `01_OPS/REMINDERS/LAST_DAILY_RUN.md` (daily routine) already cues **ai-council** + standing bullets from `NUDGES_STANDING.md` — remind them if they are skipping intake on a heavy day.

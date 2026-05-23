@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>OperatorOS Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="title">
+      <h1>OperatorOS Tracker</h1>
+    </div>
+    <div class="header-right">
+      <div id="todayLabel" class="pill"></div>
+      <button id="installBtn" class="btn ghost" hidden>Install</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-tab="today">Today</button>
+    <button class="tab" data-tab="history">History</button>
+    <button class="tab" data-tab="weekly">Weekly</button>
+    <button class="tab" data-tab="kaizen">Kaizen</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <main class="container">
+    <section id="tab-today" class="panel active">
+      <div class="card">
+        <div class="card-header">
+          <h2>Daily Check-In</h2>
+          <div class="muted">Capture truth. Reduce chaos. Improve one thing per cycle.</div>
+        </div>
+
+        <form id="dailyForm" class="grid">
+          <div class="field">
+            <label>Sleep (hours)</label>
+            <input type="number" step="0.1" min="0" max="24" id="sleepHours" placeholder="e.g., 6.5">
+          </div>
+
+          <div class="field">
+            <label>Stress (1–5)</label>
+            <input type="number" min="1" max="5" id="stress" placeholder="1..5">
+          </div>
+
+          <div class="field">
+            <label>Energy (1–5)</label>
+            <input type="number" min="1" max="5" id="energy" placeholder="1..5">
+          </div>
+
+          <div class="field">
+            <label>Movement (minutes)</label>
+            <input type="number" min="0" max="600" id="movementMins" placeholder="e.g., 20">
+          </div>
+
+          <div class="field">
+            <label>Deep Work Blocks (#)</label>
+            <input type="number" min="0" max="10" id="deepWorkBlocks" placeholder="e.g., 1">
+          </div>
+
+          <div class="field">
+            <label>Closed Loops (#)</label>
+            <input type="number" min="0" max="50" id="closedLoops" placeholder="e.g., 3">
+          </div>
+
+          <div class="field">
+            <label>Meaningful Connections (#)</label>
+            <input type="number" min="0" max="20" id="connections" placeholder="e.g., 1">
+          </div>
+
+          <div class="field">
+            <label>Home Reset (1–5)</label>
+            <input type="number" min="1" max="5" id="homeReset" placeholder="1..5">
+          </div>
+
+          <div class="field checkbox">
+            <label class="checkline">
+              <input type="checkbox" id="financialAction">
+              <span>Financial action taken today</span>
+            </label>
+            <div class="muted">Pay down / invoice / budget / price / review.</div>
+          </div>
+
+          <div class="field span-2">
+            <label>Top 3 outcomes</label>
+            <textarea id="top3" rows="3" placeholder="1) …&#10;2) …&#10;3) …"></textarea>
+          </div>
+
+          <div class="field span-2">
+            <label>Notes</label>
+            <textarea id="notes" rows="4" placeholder="Friction, wins, signals, thoughts…"></textarea>
+          </div>
+
+          <div class="actions span-2">
+            <button type="button" id="saveBtn" class="btn primary">Save Today</button>
+            <button type="button" id="clearBtn" class="btn">Clear Form</button>
+            <div id="saveStatus" class="muted"></div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Minimum Viable Day (MVD)</h2>
+          <div class="muted">For overload days. Keep the system stable.</div>
+        </div>
+
+        <div class="mvd">
+          <label class="checkline"><input type="checkbox" data-mvd="move"> Move 10 minutes</label>
+          <label class="checkline"><input type="checkbox" data-mvd="meals"> Two decent meals</label>
+          <label class="checkline"><input type="checkbox" data-mvd="critical"> One critical responsibility</label>
+          <label class="checkline"><input type="checkbox" data-mvd="cleanup"> 15 minutes cleanup</label>
+          <label class="checkline"><input type="checkbox" data-mvd="connect"> One meaningful connection</label>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="saveMvdBtn" class="btn">Save MVD</button>
+          <div id="mvdStatus" class="muted"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-history" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2>History</h2>
+          <div class="muted">Click a date to view/edit that day.</div>
+        </div>
+        <div class="history-controls">
+          <input id="historySearch" placeholder="Filter notes / outcomes..." />
+          <button id="exportCsvBtn" class="btn ghost">Export CSV</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Selected Day</h2>
+          <div class="muted" id="selectedDayLabel">None selected</div>
+        </div>
+        <pre id="selectedDayView" class="pre"></pre>
+        <div class="actions">
+          <button id="loadSelectedToFormBtn" class="btn">Load into Today Form</button>
+          <button id="deleteSelectedBtn" class="btn danger">Delete Selected</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-weekly" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2>Weekly Ops Review</h2>
+          <div class="muted">Last 7 days rolling view + simple trend lines.</div>
+        </div>
+
+        <div class="weekly-grid">
+          <div class="metric"><div class="metric-label">Sleep avg</div><div class="metric-value" id="wkSleepAvg">—</div></div>
+          <div class="metric"><div class="metric-label">Deep work total</div><div class="metric-value" id="wkDeepWorkTotal">—</div></div>
+          <div class="metric"><div class="metric-label">Movement total</div><div class="metric-value" id="wkMovementTotal">—</div></div>
+          <div class="metric"><div class="metric-label">Closed loops total</div><div class="metric-value" id="wkClosedLoopsTotal">—</div></div>
+          <div class="metric"><div class="metric-label">Connections total</div><div class="metric-value" id="wkConnectionsTotal">—</div></div>
+          <div class="metric"><div class="metric-label">Financial actions</div><div class="metric-value" id="wkFinancialActions">—</div></div>
+        </div>
+
+        <div class="charts">
+          <div class="chart-card">
+            <div class="muted">Sleep (hours) — last 7 days</div>
+            <canvas id="sleepChart" width="800" height="240"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="muted">Deep work blocks — last 7 days</div>
+            <canvas id="deepWorkChart" width="800" height="240"></canvas>
+          </div>
+        </div>
+
+        <div class="card-header">
+          <h3>Weekly AAR</h3>
+          <div class="muted">Wins, friction, one Kaizen upgrade.</div>
+        </div>
+
+        <div class="grid">
+          <div class="field span-2">
+            <label>Wins (3 bullets)</label>
+            <textarea id="wkWins" rows="3" placeholder="- …&#10;- …&#10;- …"></textarea>
+          </div>
+          <div class="field span-2">
+            <label>Friction (3 bullets)</label>
+            <textarea id="wkFriction" rows="3" placeholder="- …&#10;- …&#10;- …"></textarea>
+          </div>
+          <div class="field span-2">
+            <label>One Kaizen upgrade (this week)</label>
+            <textarea id="wkKaizen" rows="3" placeholder="What will you improve, specifically?"></textarea>
+          </div>
+          <div class="actions span-2">
+            <button id="saveWeeklyBtn" class="btn primary">Save Weekly Review</button>
+            <div id="weeklyStatus" class="muted"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-kaizen" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2>Kaizen Log</h2>
+          <div class="muted">One improvement per cycle. Compounding wins.</div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Week starting (Monday)</label>
+            <input type="date" id="kaizenWeekStart">
+          </div>
+
+          <div class="field span-2">
+            <label>Kaizen change</label>
+            <textarea id="kaizenChange" rows="3" placeholder="What did you change? (process, checklist, boundary, template…)"></textarea>
+          </div>
+
+          <div class="field span-2">
+            <label>Effect / notes</label>
+            <textarea id="kaizenEffect" rows="3" placeholder="What improved? What still broke?"></textarea>
+          </div>
+
+          <div class="actions span-2">
+            <button id="saveKaizenBtn" class="btn primary">Save Kaizen</button>
+            <div id="kaizenStatus" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div id="kaizenList" class="kaizen-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2>Settings</h2>
+          <div class="muted">Local-first. Export/import to move across devices.</div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-block">
+            <h3>Export JSON</h3>
+            <p class="muted">Backup all entries, weekly reviews, and Kaizen logs.</p>
+            <button id="exportJsonBtn" class="btn">Download Backup</button>
+          </div>
+
+          <div class="settings-block">
+            <h3>Import JSON</h3>
+            <p class="muted">Restore from a backup file.</p>
+            <input type="file" id="importFile" accept="application/json" />
+            <button id="importJsonBtn" class="btn">Import Backup</button>
+          </div>
+
+          <div class="settings-block">
+            <h3>Danger Zone</h3>
+            <p class="muted">Deletes everything stored on this device.</p>
+            <button id="wipeBtn" class="btn danger">Wipe Local Data</button>
+          </div>
+        </div>
+
+        <div class="muted small">
+          Note: this template builds an EXE via Electron. If you later want a smaller installer, use Tauri.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="muted small">OperatorOS Tracker · Local-first · Offline-capable</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

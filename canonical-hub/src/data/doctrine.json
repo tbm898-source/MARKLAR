@@ -1,0 +1,41 @@
+{
+  "intro": "CANONICAL is a way of keeping one spine: projects ship, areas hold ongoing responsibility, assets are reusable, inbox is triage.",
+  "nodes": [
+    {
+      "slug": "projects",
+      "label": "Projects",
+      "path": "02_PROJECTS/",
+      "description": "Things with a finish line — builds, launches, migrations."
+    },
+    {
+      "slug": "areas",
+      "label": "Areas",
+      "path": "03_AREAS/",
+      "description": "Ongoing domains without a single ship date — health, finance, craft."
+    },
+    {
+      "slug": "assets",
+      "label": "Assets",
+      "path": "04_ASSETS/",
+      "description": "Reusable pieces — templates, media, libraries, references."
+    },
+    {
+      "slug": "inbox",
+      "label": "Inbox",
+      "path": "00_INBOX/",
+      "description": "Capture and triage — Downloads, Screenshots, then sort into the spine."
+    },
+    {
+      "slug": "ops",
+      "label": "Ops",
+      "path": "01_OPS/",
+      "description": "Tasks, logs, automation — daily report, manifests, master task list."
+    },
+    {
+      "slug": "review",
+      "label": "Review",
+      "path": "90_REVIEW/",
+      "description": "Unclear items parked until they earn a real destination."
+    }
+  ]
+}
