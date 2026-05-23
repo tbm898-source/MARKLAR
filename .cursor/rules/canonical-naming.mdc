@@ -1,0 +1,32 @@
+---
+description: Naming standardization agent for CANONICAL — audit paths, propose renames, apply after approval.
+alwaysApply: false
+---
+
+# CANONICAL naming agent
+
+Use when the user wants **consistent names**, **rename passes**, or **cleanup** of `Copy (1)`, spaces, or mixed conventions under CANONICAL.
+
+## Authority
+
+Follow **`canonical-support/NAMING_CONVENTIONS.md`** or **`CANONICAL/01_OPS/NAMING_CONVENTIONS.md`**. Use **`CANONICAL_MAP.md`** / **`CANONICAL/01_OPS/CANONICAL_MAP.md`** for numbered folders (`02_PROJECTS`, etc.).
+
+## Workflow
+
+1. **Scope**: folder path(s) or glob the user gives; default to read-only listing first.
+2. **Audit**: list files/folders that violate conventions (spaces, `Copy`, wrong casing, missing `ProjectKey` or date where applicable).
+3. **Plan**: table with columns **Current name** | **Proposed name** | **Rationale** | **Risk** (low/med/high).
+4. **Approval**: no renames until the user confirms.
+5. **Execute**: PowerShell `Rename-Item -LiteralPath` from leaf to root so intermediate paths stay valid; or `Move-Item -LiteralPath` when changing parent + name together.
+
+## Rules
+
+- **ASCII + underscore** for new names unless user overrides.
+- Preserve **extensions** and meaningful **version suffixes** (`_v2`); do not bump version numbers without user intent.
+- If content type is unknown, route to **`90_REVIEW/`** with a compliant name instead of guessing a project.
+- Never batch-rename thousands of files without chunking (e.g. 50 per batch) and a dry-run list first.
+
+## Git / CAD / code
+
+- Under `30_CODE` or clone directories: prefer **git mv** when the user confirms the repo is clean, or only rename what they specify.
+- CAD exports in `35_CAD`: keep association with source project in the name (`ProjectKey_Component_v1.step`).

@@ -1,0 +1,19 @@
+{
+  "name": "classroom-chatgpt-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bridge: OpenAI API + Google Classroom with AYA content gating",
+  "scripts": {
+    "auth-google": "node src/cli.mjs auth-google",
+    "courses": "node src/cli.mjs courses",
+    "gate": "node src/cli.mjs gate",
+    "draft": "node src/cli.mjs draft",
+    "post-announcement": "node src/cli.mjs post-announcement"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "googleapis": "^144.0.0",
+    "openai": "^4.77.3"
+  }
+}

@@ -1,0 +1,56 @@
+Fix: "Permission denied (publickey)" when pushing to GitHub (Windows)
+======================================================================
+
+Your remote is SSH: git@github.com:tbm898-source/MARKLAR.git
+Git needs a **private key** loaded that matches a **public key** on your GitHub account.
+
+1) Test SSH
+-----------
+  ssh -T git@github.com
+
+Success looks like: "Hi <username>! You've successfully authenticated..."
+Failure: "Permission denied (publickey)" -> continue below.
+
+2) See if you already have a key
+--------------------------------
+  dir $env:USERPROFILE\.ssh
+
+Look for id_ed25519 + id_ed25519.pub (best) or id_rsa + id_rsa.pub.
+
+3) No key? Create one
+---------------------
+  ssh-keygen -t ed25519 -C "your_email@example.com"
+
+Press Enter for default path. Optionally set a passphrase.
+
+Then copy the **public** key text:
+
+  Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub | Set-Clipboard
+
+In GitHub: Settings -> SSH and GPG keys -> New SSH key -> paste -> Save.
+
+4) Load the key into the agent (this session)
+----------------------------------------------
+  Get-Service ssh-agent | Set-Service -StartupType Manual -ErrorAction SilentlyContinue
+  Start-Service ssh-agent
+  ssh-add $env:USERPROFILE\.ssh\id_ed25519
+
+If ssh-add says "Could not open connection", use **Git Bash** and run the same ssh-add there, or enable the OpenSSH Authentication Agent service (services.msc).
+
+5) Push again
+-------------
+  cd "<path-to-this-repo>"
+  git push origin main
+
+6) Prefer HTTPS instead of SSH?
+--------------------------------
+  git remote set-url origin https://github.com/tbm898-source/MARKLAR.git
+  git push origin main
+
+Git Credential Manager should open a browser to sign in (for a **private** repo).
+If you use a PAT instead of browser login, use a **classic** PAT with **repo** scope.
+
+7) Still stuck
+--------------
+- Confirm the repo exists under your GitHub user and you have write access.
+- Try: https://docs.github.com/en/authentication/connecting-to-github-with-ssh

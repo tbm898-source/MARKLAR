@@ -1,0 +1,20 @@
+{
+  "operatorosTracker": {
+    "name": "OperatorOS Tracker",
+    "currentVersion": "1.0.0",
+    "summary": "Windows desktop app (Electron) plus optional PWA for daily ops rhythm.",
+    "changelog": [
+      {
+        "version": "1.0.0",
+        "date": "2026-04-07",
+        "notes": [
+          "Initial packaged release (NSIS installer + unpacked app)."
+        ]
+      }
+    ],
+    "downloadNote": "Host the installer on GitHub Releases, S3, or your CDN; set downloadUrl when ready.",
+    "downloadUrl": "",
+    "repoPath": "electron/",
+    "docsHref": "/tools"
+  }
+}
