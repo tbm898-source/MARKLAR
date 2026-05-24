@@ -4,6 +4,7 @@ import {
   getOperatorHealth,
   getSentinelStatus,
 } from "../services/systemStatus.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 export const systemRouter = Router();
 
@@ -14,7 +15,7 @@ function getErrorMessage(error: unknown): string {
   return "Unknown system route error";
 }
 
-systemRouter.get("/sentinel", (_req, res) => {
+systemRouter.get("/sentinel", requireAdmin, (_req, res) => {
   try {
     res.json(getSentinelStatus());
   } catch (error) {
@@ -26,7 +27,7 @@ systemRouter.get("/sentinel", (_req, res) => {
   }
 });
 
-systemRouter.get("/operator-health", (_req, res) => {
+systemRouter.get("/operator-health", requireAdmin, (_req, res) => {
   try {
     res.json(getOperatorHealth());
   } catch (error) {
@@ -38,7 +39,7 @@ systemRouter.get("/operator-health", (_req, res) => {
   }
 });
 
-systemRouter.get("/canonical-status", (_req, res) => {
+systemRouter.get("/canonical-status", requireAdmin, (_req, res) => {
   try {
     res.json(getCanonicalStatus());
   } catch (error) {
