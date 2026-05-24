@@ -143,3 +143,19 @@ export const requireAdmin: RequestHandler = (req, res, next) => {
 
   res.status(401).json(unauthorized());
 };
+
+export const requireAdminForUploadRead: RequestHandler = (req, res, next) => {
+  const config = getConfig();
+
+  if (!config.admin.token && !config.isProduction) {
+    next();
+    return;
+  }
+
+  if (isAdminAuthenticated(req)) {
+    next();
+    return;
+  }
+
+  res.status(401).send("Admin authentication required");
+};
