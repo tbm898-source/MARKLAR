@@ -92,14 +92,32 @@ no auth/mobile/native installer work yet.
    are **missing from the repo** on `main`. Per user instruction these
    were not invented. Phase 2+ work needs them sourced.
 
+## Phase 2 — blocked until roadmap/audit docs land
+
+Per user (2026-01-24): `docs/FULL_STACK_APP_ROADMAP.md` and
+`docs/CROSS_PLATFORM_AUDIT.md` now exist on GitHub branch
+`codex/next-work`. **Do not start Phase 2 until those docs are merged
+to `main` or otherwise made available in this working tree.** Re-read
+them first; do not invent Phase 2 scope.
+
 ## Backlog (post-Phase 1)
 
-- P1: Source / restore `docs/FULL_STACK_APP_ROADMAP.md` and
-  `docs/CROSS_PLATFORM_AUDIT.md`.
+- P0 (blocker for Phase 2): merge `codex/next-work` docs or pull them
+  into the working tree.
 - P1: Capacitor (Android/iOS) wrapper track — explicitly deferred.
 - P1: Electron overhaul / packaging refresh — explicitly deferred.
 - P2: Admin authentication for `/admin` (currently unauthenticated,
   trusted-network only).
 - P2: Hosted deployment hardening (rate limits, request size review,
   cookie posture, structured logging).
+- P2: `/api/version` returning the built git SHA (idea only; keep on
+  backlog, do not implement yet).
 - P3: Native APK packaging (vs PWA add-to-home).
+
+## Save-to-GitHub instructions (Phase 1 PR)
+
+- Branch: `codex/phase-1-platform-readiness`
+- Base: `main`
+- Title: `Phase 1: platform readiness (VITE_API_BASE_URL + configurable CORS + deployment docs)`
+- Body: see `docs/PR_BODY_PHASE_1.md`
+- Do not deploy from this PR.
