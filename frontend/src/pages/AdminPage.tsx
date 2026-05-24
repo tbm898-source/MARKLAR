@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useNavigate } from "react-router-dom";
 import {
   fetchCanonicalStatus,
   fetchConfig,
@@ -7,6 +8,8 @@ import {
   fetchLogs,
   fetchOperatorHealth,
   fetchSystemSentinel,
+  isUnauthorizedError,
+  logoutAdmin,
   markReviewed,
   retrySync,
   sendEmailReport,
@@ -26,6 +29,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function AdminPage() {
+  const navigate = useNavigate();
   const [logs, setLogs] = useState<FieldLog[]>([]);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [statusFilter, setStatusFilter] = useState<SyncStatus | "">("");
@@ -49,6 +53,21 @@ export function AdminPage() {
   const [systemLoading, setSystemLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
 
+  const redirectToLogin = useCallback(() => {
+    navigate("/admin/login?next=%2Fadmin", { replace: true });
+  }, [navigate]);
+
+  const handleAuthError = useCallback(
+    (err: unknown) => {
+      if (isUnauthorizedError(err)) {
+        redirectToLogin();
+        return true;
+      }
+      return false;
+    },
+    [redirectToLogin],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -57,10 +76,14 @@ export function AdminPage() {
         input_type: typeFilter || undefined,
       });
       setLogs(data);
+    } catch (err) {
+      if (!handleAuthError(err)) {
+        setLogs([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, typeFilter]);
+  }, [handleAuthError, statusFilter, typeFilter]);
   const loadSystemData = useCallback(async () => {
     setSystemLoading(true);
     setSystemError("");
@@ -70,6 +93,17 @@ export function AdminPage() {
       fetchOperatorHealth(),
       fetchCanonicalStatus(),
     ]);
+
+    if (
+      [sentinelResult, operatorResult, canonicalResult].some(
+        (result) =>
+          result.status === "rejected" && isUnauthorizedError(result.reason),
+      )
+    ) {
+      setSystemLoading(false);
+      redirectToLogin();
+      return;
+    }
 
     if (sentinelResult.status === "fulfilled") {
       setSentinelStatus(sentinelResult.value);
@@ -133,12 +167,33 @@ export function AdminPage() {
     }
 
     setSystemLoading(false);
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
-    void fetchConfig().then(setConfig);
-    void fetchIntegrationStatus().then(setIntegration);
-  }, []);
+    let active = true;
+
+    async function loadAdminMetadata() {
+      try {
+        const [appConfig, integrationStatus] = await Promise.all([
+          fetchConfig(),
+          fetchIntegrationStatus(),
+        ]);
+        if (active) {
+          setConfig(appConfig);
+          setIntegration(integrationStatus);
+        }
+      } catch (err) {
+        if (!handleAuthError(err) && active) {
+          setIntegration(null);
+        }
+      }
+    }
+
+    void loadAdminMetadata();
+    return () => {
+      active = false;
+    };
+  }, [handleAuthError]);
 
   useEffect(() => {
     void load();
@@ -224,13 +279,21 @@ export function AdminPage() {
   );
 
   const handleRetry = async (id: string) => {
-    await retrySync(id);
-    await load();
+    try {
+      await retrySync(id);
+      await load();
+    } catch (err) {
+      handleAuthError(err);
+    }
   };
 
   const handleReviewed = async (id: string) => {
-    await markReviewed(id);
-    await load();
+    try {
+      await markReviewed(id);
+      await load();
+    } catch (err) {
+      handleAuthError(err);
+    }
   };
 
   const handleEmailReport = async () => {
@@ -243,18 +306,36 @@ export function AdminPage() {
       });
       setEmailMsg(`Report sent (${result.sent} entries).`);
     } catch (err) {
-      setEmailMsg(err instanceof Error ? err.message : "Send failed");
+      if (!handleAuthError(err)) {
+        setEmailMsg(err instanceof Error ? err.message : "Send failed");
+      }
     } finally {
       setEmailSending(false);
     }
   };
 
+  const handleLogout = async () => {
+    await logoutAdmin().catch(() => undefined);
+    navigate("/admin/login", { replace: true });
+  };
+
   return (
     <div className="app-shell app-shell--admin">
-      <h1>FieldPulse Admin</h1>
-      <p>
-        <a href="/worker">Worker page</a> Â· <a href="/setup">Phone setup (QR)</a>
-      </p>
+      <div className="admin-title-row">
+        <div>
+          <h1>FieldPulse Admin</h1>
+          <p>
+            <a href="/worker">Worker page</a> | <a href="/setup">Phone setup (QR)</a>
+          </p>
+        </div>
+        <button
+          className="btn btn-secondary admin-logout-button"
+          onClick={() => void handleLogout()}
+          type="button"
+        >
+          Sign out
+        </button>
+      </div>
 
       {integration && (
         <div
@@ -311,13 +392,13 @@ export function AdminPage() {
           disabled={emailSending}
           onClick={() => void handleEmailReport()}
         >
-          {emailSending ? "Sendingâ€¦" : "Email report"}
+          {emailSending ? "Sending..." : "Email report"}
         </button>
       </div>
       {emailMsg && <p style={{ marginBottom: "1rem" }}>{emailMsg}</p>}
 
       {loading ? (
-        <p>Loadingâ€¦</p>
+        <p>Loading...</p>
       ) : (
         <table className="log-table">
           <thead>

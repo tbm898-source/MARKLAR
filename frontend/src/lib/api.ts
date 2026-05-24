@@ -24,6 +24,29 @@ export const API_BASE_URL = resolveApiBase();
 const API = API_BASE_URL;
 const CONFIG_CACHE_KEY = "fieldpulse_config_v1";
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+  const err = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+  return err.error ?? err.message ?? fallback;
+}
+
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  throw new ApiError(await readErrorMessage(res, fallback), res.status);
+}
+
 const DEFAULT_CONFIG: AppConfig = {
   workers: ["Tim", "Andrew Peck", "Andrew Herman", "Other"],
   sites: [
@@ -88,14 +111,19 @@ export async function fetchLogs(params?: {
   if (params?.status) q.set("status", params.status);
   if (params?.input_type) q.set("input_type", params.input_type);
   const qs = q.toString();
-  const res = await fetch(`${API}/logs${qs ? `?${qs}` : ""}`);
-  if (!res.ok) throw new Error("Failed to load logs");
+  const res = await fetch(`${API}/logs${qs ? `?${qs}` : ""}`, {
+    credentials: "include",
+  });
+  if (!res.ok) await throwApiError(res, "Failed to load logs");
   return res.json() as Promise<FieldLog[]>;
 }
 
 export async function retrySync(id: string): Promise<FieldLog> {
-  const res = await fetch(`${API}/logs/${id}/retry-sync`, { method: "POST" });
-  if (!res.ok) throw new Error("Retry failed");
+  const res = await fetch(`${API}/logs/${id}/retry-sync`, {
+    credentials: "include",
+    method: "POST",
+  });
+  if (!res.ok) await throwApiError(res, "Retry failed");
   return res.json() as Promise<FieldLog>;
 }
 
@@ -103,8 +131,10 @@ export async function fetchIntegrationStatus(): Promise<{
   emailConfigured: boolean;
   clickupConfigured: boolean;
 }> {
-  const res = await fetch(`${API}/reports/status`);
-  if (!res.ok) throw new Error("Failed to load status");
+  const res = await fetch(`${API}/reports/status`, {
+    credentials: "include",
+  });
+  if (!res.ok) await throwApiError(res, "Failed to load status");
   return res.json() as Promise<{
     emailConfigured: boolean;
     clickupConfigured: boolean;
@@ -116,25 +146,50 @@ export async function sendEmailReport(filters?: {
   input_type?: string;
 }): Promise<{ ok: boolean; sent: number }> {
   const res = await fetch(`${API}/reports/email`, {
+    credentials: "include",
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...filters, limit: 50 }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error ?? "Failed to send email report"
-    );
+    await throwApiError(res, "Failed to send email report");
   }
   return res.json() as Promise<{ ok: boolean; sent: number }>;
 }
 
 export async function markReviewed(id: string): Promise<FieldLog> {
   const res = await fetch(`${API}/logs/${id}/mark-reviewed`, {
+    credentials: "include",
     method: "POST",
   });
-  if (!res.ok) throw new Error("Mark reviewed failed");
+  if (!res.ok) await throwApiError(res, "Mark reviewed failed");
   return res.json() as Promise<FieldLog>;
+}
+
+export async function fetchAdminAuthStatus(): Promise<{ authenticated: boolean }> {
+  const res = await fetch(`${API}/admin/me`, {
+    credentials: "include",
+  });
+  if (!res.ok) await throwApiError(res, "Failed to check admin session");
+  return res.json() as Promise<{ authenticated: boolean }>;
+}
+
+export async function loginAdmin(token: string): Promise<void> {
+  const res = await fetch(`${API}/admin/login`, {
+    credentials: "include",
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) await throwApiError(res, "Admin login failed");
+}
+
+export async function logoutAdmin(): Promise<void> {
+  const res = await fetch(`${API}/admin/logout`, {
+    credentials: "include",
+    method: "POST",
+  });
+  if (!res.ok) await throwApiError(res, "Admin logout failed");
 }
 
 export async function uploadPhoto(file: File): Promise<string> {
@@ -235,7 +290,9 @@ export type OperatorHealthResponse = {
 };
 
 async function fetchSystemStatusJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    credentials: "include",
+  });
   const text = await response.text();
 
   let payload: any = null;
@@ -249,8 +306,9 @@ async function fetchSystemStatusJson<T>(url: string): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new ApiError(
       payload?.message || payload?.error || `Request failed: ${response.status}`,
+      response.status,
     );
   }
 

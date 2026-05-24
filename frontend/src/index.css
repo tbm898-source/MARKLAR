@@ -216,6 +216,23 @@ textarea {
   margin-bottom: 1.5rem;
 }
 
+.admin-title-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.admin-title-row p {
+  margin: 0;
+}
+
+.admin-logout-button {
+  flex: 0 0 auto;
+  max-width: 180px;
+}
+
 .admin-filters label {
   font-size: 0.875rem;
 }
@@ -335,9 +352,62 @@ textarea {
   max-width: 200px;
 }
 
+.admin-login-shell {
+  justify-content: center;
+  max-width: 440px;
+}
+
+.admin-login-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+}
+
+.admin-login-kicker {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+}
+
+.admin-login-copy {
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.admin-login-button {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.admin-login-error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0;
+}
+
+.admin-login-footer {
+  font-size: 0.9rem;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   .log-table {
     display: block;
     overflow-x: auto;
+  }
+
+  .admin-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-logout-button {
+    max-width: none;
   }
 }
