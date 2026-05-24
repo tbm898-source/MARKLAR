@@ -46,6 +46,74 @@ When `VITE_API_BASE_URL` is empty the client uses same-origin `/api`.
   warning at startup.
 - Wildcard `*` is intentionally **not** supported in production.
 
+## Backend startup validation (Phase 2 / PR 2a)
+
+Backend boot validates the risky environment variables in
+`backend/src/config.ts` before mounting any router or opening the
+database. If validation fails, the process exits with a clear
+`[FieldPulse config] <FIELD>: <reason>` error and **does not** half-start.
+
+### Validated fields
+
+| Field | Rule |
+|-------|------|
+| `NODE_ENV` | Empty or one of `development`, `test`, `production` (case-insensitive). Any other value fails fast. |
+| `PORT` | Empty or an integer in `1..65535`. Non-numeric or out-of-range values fail fast. |
+| `CORS_ALLOWED_ORIGINS` | Each comma-separated entry must parse as `scheme://host[:port]` with an `http`/`https` scheme and no path, query, or fragment. Wildcard `*` is rejected at boot in production and ignored with a warning in dev. |
+
+### Startup summary log
+
+Backend now prints a single, secret-free configuration line at boot:
+
+```
+[FieldPulse] config: mode=<nodeEnv> port=<port> frontend-dist=<path> uploads=<path> cors-allowlist=<count>
+```
+
+Only the **count** of CORS entries is logged, never the entries
+themselves. Use this line to confirm the backend booted with the
+configuration you expected.
+
+### Negative tests (documentation only)
+
+These commands document the expected fail-fast behavior. They are
+intentionally not wrapped in a shell script (Phase 2 keeps doc-only
+smoke tests, matching Phase 1).
+
+```bash
+# PORT must be numeric and in 1..65535
+PORT=not-a-number npm run start --prefix backend
+# Expected: process exits with
+#   [FieldPulse config] PORT: expected an integer in 1..65535 (got "not-a-number")
+
+PORT=70000 npm run start --prefix backend
+# Expected: process exits with
+#   [FieldPulse config] PORT: expected an integer in 1..65535 (got "70000")
+
+# CORS_ALLOWED_ORIGINS entries must each be a valid origin
+CORS_ALLOWED_ORIGINS=not-a-url npm run start --prefix backend
+# Expected: process exits with
+#   [FieldPulse config] CORS_ALLOWED_ORIGINS: "not-a-url" is not a valid origin. ...
+
+CORS_ALLOWED_ORIGINS="https://app.example.com/admin" npm run start --prefix backend
+# Expected: process exits — origin must not contain a path.
+
+# NODE_ENV must be one of development | test | production
+NODE_ENV=staging npm run start --prefix backend
+# Expected: process exits with
+#   [FieldPulse config] NODE_ENV: expected one of development, test, production (got "staging")
+
+# Wildcard is rejected in production
+NODE_ENV=production CORS_ALLOWED_ORIGINS="*" npm run start --prefix backend
+# Expected: process exits with
+#   [FieldPulse config] CORS_ALLOWED_ORIGINS: wildcard "*" is not accepted in production. ...
+
+# Production + empty CORS_ALLOWED_ORIGINS is allowed but warns loudly
+NODE_ENV=production npm run start --prefix backend
+# Expected: process boots successfully and logs
+#   [FieldPulse] WARNING: NODE_ENV=production but CORS_ALLOWED_ORIGINS is empty. ...
+# Cross-origin browser requests are rejected; same-origin requests still work.
+```
+
 ## Smoke-test checklist
 
 Use this checklist after a configuration change or build. The commands are
