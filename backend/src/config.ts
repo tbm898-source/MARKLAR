@@ -48,6 +48,44 @@ export interface Config {
    * provided. Triggers the loud startup warning preserved from Phase 1.
    */
   corsProductionEmptyWarning: boolean;
+  /**
+   * Raw `DATABASE_URL` env value (or `undefined` if not set). PR 2b
+   * preserves db.ts's existing path-resolution logic; only the input
+   * source changes from `process.env.DATABASE_URL` to `config.databaseUrl`.
+   */
+  databaseUrl: string | undefined;
+  /**
+   * Raw `FIELD_PULSE_DATA_DIR` env value (or `undefined`). Used by db.ts
+   * exactly as before; PR 2b does not normalize or resolve it here.
+   */
+  fieldPulseDataDir: string | undefined;
+  /**
+   * ClickUp credentials and base URL. PR 2b indirection only — no
+   * validation. Missing values keep the existing "not configured"
+   * behavior in `isClickUpConfigured()` and `createClickUpTask()`.
+   */
+  clickup: {
+    apiToken: string | undefined;
+    listId: string | undefined;
+    /** Default `https://api.clickup.com/api/v2`. Never empty. */
+    baseUrl: string;
+  };
+  /**
+   * Email/SMTP settings. PR 2b indirection only — no validation. The
+   * sample-value rejection and "not configured" fallback in email.ts
+   * are preserved verbatim.
+   */
+  email: {
+    host: string | undefined;
+    /** Default 587 (matches previous parseInt fallback). */
+    port: number;
+    secure: boolean;
+    user: string | undefined;
+    pass: string | undefined;
+    from: string | undefined;
+    /** Raw, untrimmed REPORT_EMAIL_TO. email.ts splits/trims at use site. */
+    reportTo: string | undefined;
+  };
 }
 
 /**
@@ -185,7 +223,37 @@ export function loadConfig(): Config {
   const corsProductionEmptyWarning =
     isProduction && corsAllowedOrigins.length === 0;
 
-  return {
+  // --- PR 2b: indirection-only env passthrough (no validation here) ---
+  //
+  // These values are read out of process.env exactly as the call sites
+  // did before, so we preserve behavior. The only change is that the
+  // env is now read once at boot, and consumers go through `getConfig()`
+  // instead of `process.env`.
+  const databaseUrl = process.env.DATABASE_URL || undefined;
+  const fieldPulseDataDir = process.env.FIELD_PULSE_DATA_DIR || undefined;
+
+  const clickup = {
+    apiToken: process.env.CLICKUP_API_TOKEN?.trim() || undefined,
+    listId: process.env.CLICKUP_LIST_ID?.trim() || undefined,
+    baseUrl:
+      process.env.CLICKUP_BASE_URL?.trim() || "https://api.clickup.com/api/v2",
+  };
+
+  // SMTP_PORT preserves the previous `parseInt(.. ?? "587", 10)` fallback.
+  // We do NOT add validation here — out of scope for PR 2b — so a
+  // malformed value still flows through as NaN exactly like before.
+  const smtpPortRaw = process.env.SMTP_PORT;
+  const email = {
+    host: process.env.SMTP_HOST?.trim() || undefined,
+    port: smtpPortRaw === undefined ? 587 : parseInt(smtpPortRaw, 10),
+    secure: process.env.SMTP_SECURE === "true",
+    user: process.env.SMTP_USER?.trim() || undefined,
+    pass: process.env.SMTP_PASS?.trim() || undefined,
+    from: process.env.SMTP_FROM?.trim() || undefined,
+    reportTo: process.env.REPORT_EMAIL_TO?.trim() || undefined,
+  };
+
+  const loaded: Config = {
     nodeEnv,
     isProduction,
     port,
@@ -194,7 +262,44 @@ export function loadConfig(): Config {
     envFilePath,
     corsAllowedOrigins,
     corsProductionEmptyWarning,
+    databaseUrl,
+    fieldPulseDataDir,
+    clickup,
+    email,
   };
+  cachedConfig = loaded;
+  return loaded;
+}
+
+/**
+ * Module-level singleton storage for the loaded config (PR 2b).
+ *
+ * `loadConfig()` populates this once at boot from `index.ts`. Backend
+ * modules (`db.ts`, `email.ts`, `clickup.ts`, `upload.ts`) read it
+ * lazily via `getConfig()` — never at module top level — so the
+ * import-order constraint is satisfied even though the modules are
+ * imported by `index.ts` before `loadConfig()` runs.
+ */
+let cachedConfig: Config | null = null;
+
+/**
+ * Return the config loaded by a prior `loadConfig()` call.
+ *
+ * Throws a clear, prefixed Error if called before `loadConfig()`. This
+ * guard makes the import-order rule self-enforcing: any future code
+ * that accidentally reads config at module top level fails fast at
+ * boot with an obvious message instead of silently picking up empty
+ * env values.
+ */
+export function getConfig(): Config {
+  if (!cachedConfig) {
+    throw new Error(
+      "[FieldPulse config] getConfig() called before loadConfig(). " +
+        "Ensure loadConfig() runs at the top of the process entry point " +
+        "before any router, db, or service function is invoked.",
+    );
+  }
+  return cachedConfig;
 }
 
 /**

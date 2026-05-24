@@ -1,3 +1,4 @@
+import { getConfig } from "../config.js";
 import type { FieldLog } from "../types.js";
 
 function formatDate(iso: string): string {
@@ -87,11 +88,10 @@ export interface ClickUpTaskResult {
 export async function createClickUpTask(
   log: FieldLog
 ): Promise<ClickUpTaskResult> {
-  const token = process.env.CLICKUP_API_TOKEN?.trim();
-  const listId = process.env.CLICKUP_LIST_ID?.trim();
-  const baseUrl =
-    process.env.CLICKUP_BASE_URL?.trim() ||
-    "https://api.clickup.com/api/v2";
+  // PR 2b: read ClickUp credentials via getConfig() instead of process.env.
+  // The default baseUrl fallback is now resolved inside config.ts, so the
+  // value here is guaranteed to be a non-empty string.
+  const { apiToken: token, listId, baseUrl } = getConfig().clickup;
 
   if (!token || !listId) {
     throw new Error("ClickUp is not configured (missing token or list ID)");

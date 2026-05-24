@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getConfig } from "./config.js";
 import type { CreateLogBody, FieldLog, InputType, SyncStatus } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -10,13 +11,19 @@ const backendRoot = path.resolve(__dirname, "..");
 let db: Database.Database | null = null;
 
 function getDataDir(): string {
-  return process.env.FIELD_PULSE_DATA_DIR
-    ? path.resolve(process.env.FIELD_PULSE_DATA_DIR)
+  // PR 2b: read FIELD_PULSE_DATA_DIR via getConfig() instead of
+  // process.env. Resolution logic preserved byte-for-byte.
+  const fieldPulseDataDir = getConfig().fieldPulseDataDir;
+  return fieldPulseDataDir
+    ? path.resolve(fieldPulseDataDir)
     : path.resolve(backendRoot, "data");
 }
 
 export function getDbPath(): string {
-  const url = process.env.DATABASE_URL;
+  // PR 2b: read DATABASE_URL and FIELD_PULSE_DATA_DIR via getConfig().
+  // The branching/resolution rules below are preserved byte-for-byte.
+  const config = getConfig();
+  const url = config.databaseUrl;
   if (!url) {
     return path.resolve(getDataDir(), "fieldpulse.sqlite");
   }
@@ -25,14 +32,14 @@ export function getDbPath(): string {
   if (path.isAbsolute(relative)) return relative;
 
   if (
-    process.env.FIELD_PULSE_DATA_DIR &&
+    config.fieldPulseDataDir &&
     (relative === "./data/fieldpulse.sqlite" ||
       relative === "data/fieldpulse.sqlite")
   ) {
     return path.resolve(getDataDir(), "fieldpulse.sqlite");
   }
 
-  const baseDir = process.env.FIELD_PULSE_DATA_DIR ? getDataDir() : backendRoot;
+  const baseDir = config.fieldPulseDataDir ? getDataDir() : backendRoot;
   return path.resolve(baseDir, relative);
 }
 
@@ -253,11 +260,12 @@ export function markReviewed(id: string): FieldLog | null {
 }
 
 export function isClickUpConfigured(): boolean {
-  const token = process.env.CLICKUP_API_TOKEN?.trim();
-  const listId = process.env.CLICKUP_LIST_ID?.trim();
+  // PR 2b: read ClickUp credentials via getConfig() instead of process.env.
+  // Sample-placeholder rejection preserved verbatim.
+  const { apiToken, listId } = getConfig().clickup;
   return Boolean(
-    token &&
-      token !== "pk_your_token_here" &&
+    apiToken &&
+      apiToken !== "pk_your_token_here" &&
       listId &&
       listId !== "your_clickup_list_id_here"
   );
