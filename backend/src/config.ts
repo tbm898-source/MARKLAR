@@ -86,6 +86,15 @@ export interface Config {
     /** Raw, untrimmed REPORT_EMAIL_TO. email.ts splits/trims at use site. */
     reportTo: string | undefined;
   };
+  /**
+   * Admin authentication settings (PR 4). Empty token keeps admin routes
+   * open in dev/test and fail-closed in production.
+   */
+  admin: {
+    token: string | undefined;
+    sessionTtlHours: number;
+    cookieName: string;
+  };
 }
 
 /**
@@ -122,6 +131,38 @@ function parsePort(raw: string | undefined): number {
     );
   }
   return value;
+}
+
+function parseAdminToken(raw: string | undefined): string | undefined {
+  const token = (raw ?? "").trim();
+  if (!token) return undefined;
+  if (token.length < 16) {
+    throw configError(
+      "ADMIN_TOKEN",
+      `must be at least 16 characters when set (got ${token.length})`,
+    );
+  }
+  return token;
+}
+
+function parseAdminSessionTtlHours(raw: string | undefined): number {
+  const trimmed = (raw ?? "").trim();
+  const value = trimmed === "" ? 12 : Number(trimmed);
+  if (!Number.isInteger(value) || value < 1 || value > 168) {
+    throw configError(
+      "ADMIN_SESSION_TTL_HOURS",
+      `expected an integer in 1..168 (got "${raw}")`,
+    );
+  }
+  return value;
+}
+
+function parseAdminCookieName(raw: string | undefined): string {
+  const name = (raw ?? "").trim() || "fp_admin";
+  if (!/^[A-Za-z0-9_-]+$/.test(name)) {
+    throw configError("ADMIN_COOKIE_NAME", `invalid cookie name "${raw}"`);
+  }
+  return name;
 }
 
 /**
@@ -253,6 +294,14 @@ export function loadConfig(): Config {
     reportTo: process.env.REPORT_EMAIL_TO?.trim() || undefined,
   };
 
+  const admin = {
+    token: parseAdminToken(process.env.ADMIN_TOKEN),
+    sessionTtlHours: parseAdminSessionTtlHours(
+      process.env.ADMIN_SESSION_TTL_HOURS,
+    ),
+    cookieName: parseAdminCookieName(process.env.ADMIN_COOKIE_NAME),
+  };
+
   const loaded: Config = {
     nodeEnv,
     isProduction,
@@ -266,6 +315,7 @@ export function loadConfig(): Config {
     fieldPulseDataDir,
     clickup,
     email,
+    admin,
   };
   cachedConfig = loaded;
   return loaded;
@@ -308,16 +358,18 @@ export function getConfig(): Config {
  *
  * Format:
  *   [FieldPulse] config: mode=<nodeEnv> port=<port> frontend-dist=<path>
- *   uploads=<path> cors-allowlist=<count>
+ *   uploads=<path> cors-allowlist=<count> admin-token=<set|empty>
  *
  * The number of CORS entries is logged, never the entries themselves —
  * those origins are not secrets but the count is sufficient for sanity
- * checking and avoids accidental log diffing.
+ * checking and avoids accidental log diffing. The admin token value is
+ * never logged, only whether one is configured.
  */
 export function summarizeConfig(config: Config): string {
   return (
     `[FieldPulse] config: mode=${config.nodeEnv} port=${config.port} ` +
     `frontend-dist=${config.frontendDistDir} uploads=${config.uploadsDir} ` +
-    `cors-allowlist=${config.corsAllowedOrigins.length}`
+    `cors-allowlist=${config.corsAllowedOrigins.length} ` +
+    `admin-token=${config.admin.token ? "set" : "empty"}`
   );
 }

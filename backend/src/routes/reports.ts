@@ -1,18 +1,19 @@
 import { Router } from "express";
 import { listLogs, isClickUpConfigured } from "../db.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import { isEmailConfigured, sendReportEmail } from "../services/email.js";
 import type { InputType, SyncStatus } from "../types.js";
 
 export const reportsRouter = Router();
 
-reportsRouter.get("/status", (_req, res) => {
+reportsRouter.get("/status", requireAdmin, (_req, res) => {
   res.json({
     emailConfigured: isEmailConfigured(),
     clickupConfigured: isClickUpConfigured(),
   });
 });
 
-reportsRouter.post("/email", async (req, res) => {
+reportsRouter.post("/email", requireAdmin, async (req, res) => {
   if (!isEmailConfigured()) {
     res.status(400).json({
       error:

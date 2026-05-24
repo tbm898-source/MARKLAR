@@ -9,6 +9,7 @@ import {
 } from "../db.js";
 import { processAfterSave } from "../services/processLog.js";
 import { syncLogToClickUp } from "../services/sync.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import type { CreateLogBody, InputType, SyncStatus } from "../types.js";
 
 export const logsRouter = Router();
@@ -64,7 +65,7 @@ logsRouter.post("/", async (req, res) => {
   res.status(201).json(result ?? log);
 });
 
-logsRouter.get("/", (req, res) => {
+logsRouter.get("/", requireAdmin, (req, res) => {
   const status = req.query.status as SyncStatus | undefined;
   const input_type = req.query.input_type as InputType | undefined;
   const limit = req.query.limit
@@ -78,8 +79,9 @@ logsRouter.get("/", (req, res) => {
   res.json(logs);
 });
 
-logsRouter.get("/:id", (req, res) => {
-  const log = getLogById(req.params.id);
+logsRouter.get("/:id", requireAdmin, (req, res) => {
+  const id = String(req.params.id);
+  const log = getLogById(id);
   if (!log) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -87,8 +89,9 @@ logsRouter.get("/:id", (req, res) => {
   res.json(log);
 });
 
-logsRouter.post("/:id/retry-sync", async (req, res) => {
-  const log = getLogById(req.params.id);
+logsRouter.post("/:id/retry-sync", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const log = getLogById(id);
   if (!log) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -112,12 +115,13 @@ logsRouter.post("/:id/retry-sync", async (req, res) => {
     return;
   }
 
-  const synced = await syncLogToClickUp(req.params.id);
+  const synced = await syncLogToClickUp(id);
   res.json(synced);
 });
 
-logsRouter.post("/:id/mark-reviewed", (req, res) => {
-  const log = markReviewed(req.params.id);
+logsRouter.post("/:id/mark-reviewed", requireAdmin, (req, res) => {
+  const id = String(req.params.id);
+  const log = markReviewed(id);
   if (!log) {
     res.status(404).json({ error: "Not found" });
     return;

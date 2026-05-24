@@ -5,6 +5,7 @@ import cors, { type CorsOptions } from "cors";
 import { loadConfig, summarizeConfig } from "./config.js";
 import { getDb } from "./db.js";
 import { healthRouter } from "./routes/health.js";
+import { adminRouter } from "./routes/admin.js";
 import { configRouter } from "./routes/config.js";
 import { logsRouter } from "./routes/logs.js";
 import { uploadRouter } from "./routes/upload.js";
@@ -30,9 +31,20 @@ if (config.corsProductionEmptyWarning) {
   );
 }
 
-// Other backend modules continue to read process.env directly in this PR.
-// Migrating db.ts / email.ts / clickup.ts / upload.ts to the typed config
-// object is deferred to a follow-up PR (per the approved PR 2a scope).
+if (!config.admin.token) {
+  if (config.isProduction) {
+    console.warn(
+      "[FieldPulse] WARNING: NODE_ENV=production but ADMIN_TOKEN is empty. " +
+        "All admin routes will respond 401. Set ADMIN_TOKEN to enable the admin gate.",
+    );
+  } else {
+    console.warn(
+      "[FieldPulse] WARNING: ADMIN_TOKEN is empty — admin routes are OPEN. " +
+        "Set ADMIN_TOKEN in .env to enable the admin gate.",
+    );
+  }
+}
+
 getDb();
 
 const app = express();
@@ -93,6 +105,7 @@ app.use(express.json({ limit: "2mb" }));
 app.use("/uploads", express.static(config.uploadsDir));
 
 app.use("/api/health", healthRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api/config", configRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/upload-photo", uploadRouter);
