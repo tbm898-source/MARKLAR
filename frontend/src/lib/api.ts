@@ -1,6 +1,27 @@
 import type { AppConfig, CreateLogPayload, FieldLog } from "../types.js";
 
-const API = "/api";
+/**
+ * Resolve the API base URL.
+ *
+ * Default (empty / undefined VITE_API_BASE_URL): same-origin `/api`.
+ *   - Used by local dev (via Vite proxy), desktop (Electron), and the
+ *     single-server production mode where the backend serves the built
+ *     frontend on the same origin.
+ *
+ * When VITE_API_BASE_URL is set (e.g. https://api.example.com): the client
+ * talks to that absolute origin instead. Trailing slashes are stripped.
+ * This is the hosted-API deployment mode (frontend and backend on
+ * different origins, backend CORS must allow the frontend origin).
+ */
+function resolveApiBase(): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (!raw) return "/api";
+  const noTrailingSlash = raw.replace(/\/+$/, "");
+  return `${noTrailingSlash}/api`;
+}
+
+export const API_BASE_URL = resolveApiBase();
+const API = API_BASE_URL;
 const CONFIG_CACHE_KEY = "fieldpulse_config_v1";
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -237,13 +258,13 @@ async function fetchSystemStatusJson<T>(url: string): Promise<T> {
 }
 
 export async function fetchSystemSentinel(): Promise<SentinelStatusResponse> {
-  return fetchSystemStatusJson<SentinelStatusResponse>("/api/system/sentinel");
+  return fetchSystemStatusJson<SentinelStatusResponse>(`${API}/system/sentinel`);
 }
 
 export async function fetchOperatorHealth(): Promise<OperatorHealthResponse> {
-  return fetchSystemStatusJson<OperatorHealthResponse>("/api/system/operator-health");
+  return fetchSystemStatusJson<OperatorHealthResponse>(`${API}/system/operator-health`);
 }
 
 export async function fetchCanonicalStatus(): Promise<CanonicalStatusResponse> {
-  return fetchSystemStatusJson<CanonicalStatusResponse>("/api/system/canonical-status");
+  return fetchSystemStatusJson<CanonicalStatusResponse>(`${API}/system/canonical-status`);
 }

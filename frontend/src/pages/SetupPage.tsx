@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { API_BASE_URL } from "../lib/api.js";
 
 interface SetupInfo {
   port: number;
@@ -20,7 +21,7 @@ export function SetupPage() {
   const [copied, setCopied] = useState("");
 
   useEffect(() => {
-    void fetch("/api/setup")
+    void fetch(`${API_BASE_URL}/setup`)
       .then((r) => {
         if (!r.ok) throw new Error("Server not ready");
         return r.json() as Promise<SetupInfo>;
