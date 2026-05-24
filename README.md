@@ -278,3 +278,12 @@ Security boundaries:
 - Existing worker/admin logging flow remains unchanged
 - SQLite remains unchanged
 - Secrets stay server-side only
+
+## Full-Stack / Cross-Platform Roadmap
+
+The next product track is documented in:
+
+- [Full-stack app roadmap](docs/FULL_STACK_APP_ROADMAP.md)
+- [Cross-platform audit](docs/CROSS_PLATFORM_AUDIT.md)
+
+Short version: keep one shared React app, use a hosted backend for true multi-device sync, use Capacitor for Android/iPhone when ready, keep Electron for Windows/macOS desktop packaging, and keep generated installers out of Git history.
