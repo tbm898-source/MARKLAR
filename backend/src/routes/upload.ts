@@ -1,20 +1,24 @@
 import { Router } from "express";
 import multer from "multer";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { getConfig } from "../config.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = process.env.UPLOADS_DIR
-  ? path.resolve(process.env.UPLOADS_DIR)
-  : path.resolve(__dirname, "../../uploads");
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// PR 2b: the uploads directory is resolved via getConfig() at request
+// time (inside the multer `destination` callback), NOT at module import
+// time. This satisfies the import-order rule — this module is imported
+// by index.ts before loadConfig() runs, but getConfig() is only called
+// once an actual upload request arrives, which is well after boot.
+//
+// Observational behavior is identical: the directory always exists by
+// the time a photo is written.
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
+    const uploadsDir = getConfig().uploadsDir;
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
     cb(null, uploadsDir);
   },
   filename: (_req, file, cb) => {

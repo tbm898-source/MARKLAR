@@ -1,31 +1,30 @@
 import nodemailer from "nodemailer";
+import { getConfig } from "../config.js";
 import type { FieldLog } from "../types.js";
 
 export function isEmailConfigured(): boolean {
-  const host = process.env.SMTP_HOST?.trim();
-  const to = process.env.REPORT_EMAIL_TO?.trim();
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
+  // PR 2b: read SMTP/report fields via getConfig() instead of process.env.
+  // Sample-placeholder rejection strings preserved verbatim.
+  const { host, user, pass, reportTo } = getConfig().email;
 
   return Boolean(
     host &&
       host !== "smtp.example.com" &&
-      to &&
-      to !== "you@example.com,manager@example.com" &&
+      reportTo &&
+      reportTo !== "you@example.com,manager@example.com" &&
       user !== "your.email@gmail.com" &&
       pass !== "your_app_password_here"
   );
 }
 
 function getTransporter() {
-  const host = process.env.SMTP_HOST!.trim();
-  const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
-  const secure = process.env.SMTP_SECURE === "true";
+  // PR 2b: read SMTP settings via getConfig(). The previous code used
+  // a non-null assertion on SMTP_HOST; we preserve that assumption here
+  // (callers gate on isEmailConfigured() first).
+  const { host, port, secure, user, pass } = getConfig().email;
 
   return nodemailer.createTransport({
-    host,
+    host: host!,
     port,
     secure,
     auth: user && pass ? { user, pass } : undefined,
@@ -83,6 +82,22 @@ function subjectForLog(log: FieldLog): string {
   }
 }
 
+/**
+ * Resolve the From/To/recipient list at send time. PR 2b preserves the
+ * existing fallback chain (`SMTP_FROM || SMTP_USER || "fieldpulse@localhost"`)
+ * and the REPORT_EMAIL_TO comma-split semantics exactly. Only the input
+ * source changes (getConfig() instead of process.env).
+ */
+function resolveEnvelope(): { to: string[]; from: string } {
+  const { reportTo, from, user } = getConfig().email;
+  const to = (reportTo ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const fromAddress = from || user || "fieldpulse@localhost";
+  return { to, from: fromAddress };
+}
+
 export async function sendLogEmail(log: FieldLog): Promise<void> {
   if (!isEmailConfigured()) {
     console.log(
@@ -91,14 +106,7 @@ export async function sendLogEmail(log: FieldLog): Promise<void> {
     return;
   }
 
-  const to = process.env.REPORT_EMAIL_TO!.trim()
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
-  const from =
-    process.env.SMTP_FROM?.trim() ||
-    process.env.SMTP_USER?.trim() ||
-    "fieldpulse@localhost";
+  const { to, from } = resolveEnvelope();
 
   await getTransporter().sendMail({
     from,
@@ -130,14 +138,7 @@ export async function sendReportEmail(logs: FieldLog[]): Promise<void> {
     );
   }
 
-  const to = process.env.REPORT_EMAIL_TO!.trim()
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
-  const from =
-    process.env.SMTP_FROM?.trim() ||
-    process.env.SMTP_USER?.trim() ||
-    "fieldpulse@localhost";
+  const { to, from } = resolveEnvelope();
 
   const rows =
     logs.length === 0
