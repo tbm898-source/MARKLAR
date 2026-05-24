@@ -4,6 +4,7 @@ import express from "express";
 import cors, { type CorsOptions } from "cors";
 import { loadConfig, summarizeConfig } from "./config.js";
 import { getDb } from "./db.js";
+import { requireAdminForUploadRead } from "./middleware/adminAuth.js";
 import { healthRouter } from "./routes/health.js";
 import { adminRouter } from "./routes/admin.js";
 import { configRouter } from "./routes/config.js";
@@ -102,7 +103,7 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "2mb" }));
 
-app.use("/uploads", express.static(config.uploadsDir));
+app.use("/uploads", requireAdminForUploadRead, express.static(config.uploadsDir));
 
 app.use("/api/health", healthRouter);
 app.use("/api/admin", adminRouter);
