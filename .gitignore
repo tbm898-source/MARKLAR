@@ -72,3 +72,8 @@ backend/data/*.db-*
 backend/uploads/*
 !backend/uploads/.gitkeep
 !backend/data/.gitkeep
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
